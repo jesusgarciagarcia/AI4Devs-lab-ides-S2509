@@ -2,7 +2,19 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"name": "backend",
+			"path": "backend"
+		},
+		{
+			"name": "frontend",
+			"path": "frontend"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"jest.disabledWorkspaceFolders": [
+			"AI4Devs-lab-ides-S2509"
+		]
+	}
 }

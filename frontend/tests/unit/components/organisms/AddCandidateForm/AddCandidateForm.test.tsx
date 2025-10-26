@@ -1,6 +1,6 @@
 /**
- * AddCandidateForm Integration Tests
- * Testing complete form flow, validation, and submission
+ * AddCandidateForm Unit Tests
+ * Testing form rendering, validation, and user interactions
  */
 
 import { render, screen, waitFor } from '@testing-library/react';
@@ -17,7 +17,22 @@ jest.mock('react-hot-toast', () => ({
     Toaster: () => null,
 }));
 
-describe('AddCandidateForm Integration Tests', () => {
+// Mock fetch globally for this test file
+const mockFetch = jest.fn();
+
+beforeAll(() => {
+    global.fetch = mockFetch;
+});
+
+afterEach(() => {
+    mockFetch.mockClear();
+});
+
+afterAll(() => {
+    jest.restoreAllMocks();
+});
+
+describe('AddCandidateForm Unit Tests', () => {
     describe('Form Rendering', () => {
         it('renders all form sections', () => {
             render(<AddCandidateForm />);
@@ -119,7 +134,30 @@ describe('AddCandidateForm Integration Tests', () => {
             await user.type(addressInput, 'Calle Principal 123, Madrid');
             await user.type(educationInput, 'Licenciatura en Ingeniería Informática');
             await user.type(experienceInput, '5 años como desarrollador full stack en empresas tech');
+
+            // Wait for all state updates to complete
+            await waitFor(() => {
+                expect(nameInput).toHaveValue('Juan');
+            });
         };
+
+        beforeEach(() => {
+            // Setup successful mock response by default
+            mockFetch.mockResolvedValue({
+                ok: true,
+                status: 201,
+                statusText: 'Created',
+                headers: new Headers(),
+                json: async () => ({
+                    success: true,
+                    data: {
+                        id: 'test-candidate-123',
+                        firstName: 'Juan',
+                        lastName: 'Pérez'
+                    }
+                }),
+            } as unknown as Response);
+        });
 
         it('submits form with valid data', async () => {
             const user = userEvent.setup();
@@ -131,24 +169,67 @@ describe('AddCandidateForm Integration Tests', () => {
             const submitButton = screen.getByRole('button', { name: /guardar candidato/i });
             await user.click(submitButton);
 
+            // Wait for the API call to complete
+            await waitFor(() => {
+                expect(mockFetch).toHaveBeenCalledTimes(1);
+            });
+
+            // Verify the fetch was called with correct data
+            expect(mockFetch).toHaveBeenCalledWith(
+                expect.stringContaining('/candidates'),
+                expect.objectContaining({
+                    method: 'POST',
+                })
+            );
+
+            // Wait for success callback
             await waitFor(() => {
                 expect(onSuccess).toHaveBeenCalled();
-            }, { timeout: 3000 });
+            });
         });
 
         it('shows loading state during submission', async () => {
+            // Mock an unresolved promise that we control
+            let resolvePromise: (value: any) => void;
+            const delayedPromise = new Promise(resolve => {
+                resolvePromise = resolve;
+            });
+
+            mockFetch.mockReturnValue(delayedPromise as any);
+
             const user = userEvent.setup();
             render(<AddCandidateForm />);
 
             await fillValidForm(user);
 
             const submitButton = screen.getByRole('button', { name: /guardar candidato/i });
+
+            // Click submit
             await user.click(submitButton);
 
-            expect(screen.getByRole('button', { name: /guardando/i })).toBeInTheDocument();
+            // Check for loading state - button text changes to "Guardando..."
+            await waitFor(() => {
+                expect(screen.getByText(/guardando\.\.\./i)).toBeInTheDocument();
+            });
+
+            // Resolve the promise to complete the test
+            resolvePromise!({
+                ok: true,
+                status: 201,
+                statusText: 'Created',
+                json: async () => ({ success: true, data: { id: '123' } })
+            } as unknown as Response);
         });
 
         it('disables form during submission', async () => {
+            // Mock an unresolved promise that we control
+            let resolvePromise: (value: any) => void;
+            const delayedPromise = new Promise(resolve => {
+                resolvePromise = resolve;
+            });
+
+            mockFetch.mockReturnValue(delayedPromise as any);
+
             const user = userEvent.setup();
             render(<AddCandidateForm />);
 
@@ -157,10 +238,53 @@ describe('AddCandidateForm Integration Tests', () => {
             const submitButton = screen.getByRole('button', { name: /guardar candidato/i });
             const cancelButton = screen.getByRole('button', { name: /cancelar/i });
 
+            // Click submit
             await user.click(submitButton);
 
-            expect(submitButton).toBeDisabled();
+            // Check that buttons are disabled during submission
+            await waitFor(() => {
+                expect(submitButton).toBeDisabled();
+            });
+
             expect(cancelButton).toBeDisabled();
+
+            // Resolve the promise to complete the test
+            resolvePromise!({
+                ok: true,
+                status: 201,
+                statusText: 'Created',
+                json: async () => ({ success: true, data: { id: '123' } })
+            } as unknown as Response);
+        });
+
+        it('handles API errors gracefully', async () => {
+            // Mock error response
+            mockFetch.mockResolvedValue({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                json: async () => ({
+                    error: 'Internal server error'
+                }),
+            } as unknown as Response);
+
+            const user = userEvent.setup();
+            render(<AddCandidateForm />);
+
+            await fillValidForm(user);
+
+            const submitButton = screen.getByRole('button', { name: /guardar candidato/i });
+            await user.click(submitButton);
+
+            // Wait for error to be displayed
+            await waitFor(() => {
+                expect(mockFetch).toHaveBeenCalled();
+            });
+
+            // Form should be re-enabled after error
+            await waitFor(() => {
+                expect(submitButton).not.toBeDisabled();
+            });
         });
     });
 

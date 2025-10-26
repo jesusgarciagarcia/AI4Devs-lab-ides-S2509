@@ -5,22 +5,6 @@
 import "@testing-library/jest-dom";
 import "whatwg-fetch";
 
-// Mock fetch for tests
-global.fetch = jest.fn();
-
-// Reset fetch mock before each test
-beforeEach(() => {
-  (global.fetch as jest.Mock).mockReset();
-  // Default successful response
-  (global.fetch as jest.Mock).mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      success: true,
-      data: { id: "test-id" },
-    }),
-  });
-});
-
 // Mock window.matchMedia for components that use media queries
 Object.defineProperty(window, "matchMedia", {
   writable: true,
