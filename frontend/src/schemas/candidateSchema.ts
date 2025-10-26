@@ -23,14 +23,20 @@ export const candidateSchema = z.object({
     .string()
     .min(2, "El nombre debe tener al menos 2 caracteres")
     .max(50, "El nombre no puede exceder 50 caracteres")
-    .regex(nameRegex, "El nombre solo puede contener letras")
+    .refine(
+      (val) => val.length === 0 || nameRegex.test(val),
+      "El nombre solo puede contener letras"
+    )
     .transform((str) => str.trim()),
 
   lastName: z
     .string()
     .min(2, "El apellido debe tener al menos 2 caracteres")
     .max(50, "El apellido no puede exceder 50 caracteres")
-    .regex(nameRegex, "El apellido solo puede contener letras")
+    .refine(
+      (val) => val.length === 0 || nameRegex.test(val),
+      "El apellido solo puede contener letras"
+    )
     .transform((str) => str.trim()),
 
   email: z

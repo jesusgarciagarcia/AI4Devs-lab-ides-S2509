@@ -51,10 +51,11 @@ describe('AddCandidateForm Integration Tests', () => {
 
     describe('Form Validation', () => {
         it('shows validation errors for empty required fields on submit', async () => {
+            const user = userEvent.setup();
             render(<AddCandidateForm />);
 
             const submitButton = screen.getByRole('button', { name: /guardar candidato/i });
-            await userEvent.click(submitButton);
+            await user.click(submitButton);
 
             await waitFor(() => {
                 expect(screen.getByText(/el nombre debe tener al menos 2 caracteres/i)).toBeInTheDocument();
@@ -62,11 +63,12 @@ describe('AddCandidateForm Integration Tests', () => {
         });
 
         it('validates email format on blur', async () => {
+            const user = userEvent.setup();
             render(<AddCandidateForm />);
 
             const emailInput = screen.getByLabelText(/correo electrónico/i);
-            await userEvent.type(emailInput, 'invalid-email');
-            await userEvent.tab();
+            await user.type(emailInput, 'invalid-email');
+            await user.tab();
 
             await waitFor(() => {
                 expect(screen.getByText(/ingresa un correo válido/i)).toBeInTheDocument();
@@ -74,11 +76,12 @@ describe('AddCandidateForm Integration Tests', () => {
         });
 
         it('validates phone format on blur', async () => {
+            const user = userEvent.setup();
             render(<AddCandidateForm />);
 
             const phoneInput = screen.getByLabelText(/teléfono/i);
-            await userEvent.type(phoneInput, '123');
-            await userEvent.tab();
+            await user.type(phoneInput, '123');
+            await user.tab();
 
             await waitFor(() => {
                 expect(screen.getByText(/el teléfono debe tener al menos 8 dígitos/i)).toBeInTheDocument();
@@ -86,11 +89,12 @@ describe('AddCandidateForm Integration Tests', () => {
         });
 
         it('validates minimum character length on blur', async () => {
+            const user = userEvent.setup();
             render(<AddCandidateForm />);
 
             const addressInput = screen.getByLabelText(/dirección/i);
-            await userEvent.type(addressInput, 'Short');
-            await userEvent.tab();
+            await user.type(addressInput, 'Short');
+            await user.tab();
 
             await waitFor(() => {
                 expect(screen.getByText(/la dirección debe tener al menos 10 caracteres/i)).toBeInTheDocument();
@@ -99,7 +103,7 @@ describe('AddCandidateForm Integration Tests', () => {
     });
 
     describe('Form Submission', () => {
-        const fillValidForm = async () => {
+        const fillValidForm = async (user: ReturnType<typeof userEvent.setup>) => {
             const nameInput = screen.getByLabelText(/nombre/i);
             const lastNameInput = screen.getByLabelText(/apellido/i);
             const emailInput = screen.getByLabelText(/correo electrónico/i);
@@ -108,23 +112,24 @@ describe('AddCandidateForm Integration Tests', () => {
             const educationInput = screen.getByLabelText(/educación/i);
             const experienceInput = screen.getByLabelText(/experiencia laboral/i);
 
-            await userEvent.type(nameInput, 'Juan');
-            await userEvent.type(lastNameInput, 'Pérez');
-            await userEvent.type(emailInput, 'juan.perez@ejemplo.com');
-            await userEvent.type(phoneInput, '+34612345678');
-            await userEvent.type(addressInput, 'Calle Principal 123, Madrid');
-            await userEvent.type(educationInput, 'Licenciatura en Ingeniería Informática');
-            await userEvent.type(experienceInput, '5 años como desarrollador full stack en empresas tech');
+            await user.type(nameInput, 'Juan');
+            await user.type(lastNameInput, 'Pérez');
+            await user.type(emailInput, 'juan.perez@ejemplo.com');
+            await user.type(phoneInput, '+34612345678');
+            await user.type(addressInput, 'Calle Principal 123, Madrid');
+            await user.type(educationInput, 'Licenciatura en Ingeniería Informática');
+            await user.type(experienceInput, '5 años como desarrollador full stack en empresas tech');
         };
 
         it('submits form with valid data', async () => {
+            const user = userEvent.setup();
             const onSuccess = jest.fn();
             render(<AddCandidateForm onSuccess={onSuccess} />);
 
-            await fillValidForm();
+            await fillValidForm(user);
 
             const submitButton = screen.getByRole('button', { name: /guardar candidato/i });
-            await userEvent.click(submitButton);
+            await user.click(submitButton);
 
             await waitFor(() => {
                 expect(onSuccess).toHaveBeenCalled();
@@ -132,25 +137,27 @@ describe('AddCandidateForm Integration Tests', () => {
         });
 
         it('shows loading state during submission', async () => {
+            const user = userEvent.setup();
             render(<AddCandidateForm />);
 
-            await fillValidForm();
+            await fillValidForm(user);
 
             const submitButton = screen.getByRole('button', { name: /guardar candidato/i });
-            await userEvent.click(submitButton);
+            await user.click(submitButton);
 
             expect(screen.getByRole('button', { name: /guardando/i })).toBeInTheDocument();
         });
 
         it('disables form during submission', async () => {
+            const user = userEvent.setup();
             render(<AddCandidateForm />);
 
-            await fillValidForm();
+            await fillValidForm(user);
 
             const submitButton = screen.getByRole('button', { name: /guardar candidato/i });
             const cancelButton = screen.getByRole('button', { name: /cancelar/i });
 
-            await userEvent.click(submitButton);
+            await user.click(submitButton);
 
             expect(submitButton).toBeDisabled();
             expect(cancelButton).toBeDisabled();
@@ -159,16 +166,18 @@ describe('AddCandidateForm Integration Tests', () => {
 
     describe('Form Actions', () => {
         it('calls onCancel when cancel button is clicked', async () => {
+            const user = userEvent.setup();
             const onCancel = jest.fn();
             render(<AddCandidateForm onCancel={onCancel} />);
 
             const cancelButton = screen.getByRole('button', { name: /cancelar/i });
-            await userEvent.click(cancelButton);
+            await user.click(cancelButton);
 
             expect(onCancel).toHaveBeenCalled();
         });
 
         it('shows confirmation when canceling with data', async () => {
+            const user = userEvent.setup();
             // Mock window.confirm
             const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
 
@@ -177,10 +186,10 @@ describe('AddCandidateForm Integration Tests', () => {
 
             // Fill some data
             const nameInput = screen.getByLabelText(/nombre/i);
-            await userEvent.type(nameInput, 'Juan');
+            await user.type(nameInput, 'Juan');
 
             const cancelButton = screen.getByRole('button', { name: /cancelar/i });
-            await userEvent.click(cancelButton);
+            await user.click(cancelButton);
 
             expect(confirmSpy).toHaveBeenCalled();
             expect(onCancel).not.toHaveBeenCalled();
@@ -207,6 +216,7 @@ describe('AddCandidateForm Integration Tests', () => {
         });
 
         it('all inputs are keyboard navigable', async () => {
+            const user = userEvent.setup();
             render(<AddCandidateForm />);
 
             const nameInput = screen.getByLabelText(/nombre/i);
@@ -214,7 +224,7 @@ describe('AddCandidateForm Integration Tests', () => {
             expect(nameInput).toHaveFocus();
 
             // Tab to next input
-            await userEvent.tab();
+            await user.tab();
             const lastNameInput = screen.getByLabelText(/apellido/i);
             expect(lastNameInput).toHaveFocus();
         });
