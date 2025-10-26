@@ -41,7 +41,8 @@ export const getCandidates = async (): Promise<Candidate[]> => {
     throw new Error(`Error fetching candidates: ${response.statusText}`);
   }
 
-  return response.json();
+  const json = await response.json();
+  return json.data || json;
 };
 
 /**
@@ -54,7 +55,8 @@ export const getCandidateById = async (id: number): Promise<Candidate> => {
     throw new Error(`Error fetching candidate: ${response.statusText}`);
   }
 
-  return response.json();
+  const json = await response.json();
+  return json.data || json;
 };
 
 /**
@@ -89,7 +91,8 @@ export const createCandidate = async (
     );
   }
 
-  return response.json();
+  const json = await response.json();
+  return json.data || json;
 };
 
 /**

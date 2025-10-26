@@ -6,12 +6,18 @@
 
 import { Router } from 'express';
 import { CandidateController } from './CandidateController';
+import {
+  uploadCV,
+  handleMulterError,
+} from '../../../middlewares/fileUpload.middleware';
 
 export function createCandidateRoutes(controller: CandidateController): Router {
   const router = Router();
 
-  // Create candidate
-  router.post('/', (req, res, next) => controller.create(req, res, next));
+  // Create candidate with optional CV upload
+  router.post('/', uploadCV.single('cv'), handleMulterError, (req, res, next) =>
+    controller.create(req, res, next),
+  );
 
   // Get candidate by ID
   router.get('/:id', (req, res, next) => controller.getById(req, res, next));

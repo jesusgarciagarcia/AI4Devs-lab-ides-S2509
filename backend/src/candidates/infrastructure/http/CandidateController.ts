@@ -33,18 +33,61 @@ export class CandidateController {
    */
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const userId = (req as any).user?.id || 'system';
+      console.log('📝 Creating candidate with body:', req.body);
+      console.log('📎 File uploaded:', req.file);
 
-      const response = await this.createCandidateUseCase.execute({
-        ...req.body,
-        userId,
-      });
+      const userId = (req as any).user?.id || 'system';
+      const cvFile = req.file; // Multer adds the file to req.file
+
+      // Validate required fields
+      const requiredFields = [
+        'firstName',
+        'lastName',
+        'email',
+        'phone',
+        'address',
+        'education',
+      ];
+      for (const field of requiredFields) {
+        if (!req.body[field]) {
+          console.error(`❌ Missing required field: ${field}`);
+          return next(new Error(`Missing required field: ${field}`));
+        }
+      }
+
+      // Map frontend field names to backend field names
+      const requestData = {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        email: req.body.email,
+        phone: req.body.phone,
+        address: req.body.address,
+        education: req.body.education,
+        experience: req.body.workExperience || req.body.experience, // Accept both field names
+        createdBy: userId,
+        cvPath: cvFile?.path, // Add CV path if file was uploaded
+      };
+
+      // Ensure experience is not undefined
+      if (!requestData.experience) {
+        console.error('❌ Missing experience field');
+        return next(
+          new Error('Missing required field: workExperience or experience'),
+        );
+      }
+
+      console.log('✅ Request data:', requestData);
+
+      const response = await this.createCandidateUseCase.execute(requestData);
+
+      console.log('🎉 Candidate created successfully:', response);
 
       res.status(201).json({
         success: true,
         data: response,
       });
     } catch (error) {
+      console.error('❌ Error creating candidate:', error);
       next(error);
     }
   }

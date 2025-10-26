@@ -19,6 +19,7 @@ export interface CreateCandidateRequest {
   education: string;
   experience: string;
   createdBy: string;
+  cvPath?: string; // Optional CV path
 }
 
 export interface CreateCandidateResponse {
@@ -65,10 +66,29 @@ export class CreateCandidateUseCase {
       createdBy: request.createdBy,
     });
 
-    // 4. Persistir
+    // 4. Attach CV if provided
+    if (request.cvPath) {
+      const fileName =
+        request.cvPath.split('/').pop() ||
+        request.cvPath.split('\\').pop() ||
+        'cv.pdf';
+      // Determine mime type from file extension
+      const mimeType = fileName.endsWith('.pdf')
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+      candidate.attachCv(
+        request.cvPath,
+        fileName,
+        mimeType,
+        0, // Size will be set by the file system
+      );
+    }
+
+    // 5. Persistir
     const savedCandidate = await this.candidateRepository.save(candidate);
 
-    // 5. Retornar DTO
+    // 6. Retornar DTO
     return this.toResponse(savedCandidate);
   }
 
