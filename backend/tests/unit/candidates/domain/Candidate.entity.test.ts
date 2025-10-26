@@ -4,7 +4,7 @@
  * Tests para verificar la lógica de negocio de la entidad Candidate
  */
 
-import { Candidate, CandidateStatus } from '../domain/entities/Candidate';
+import { Candidate, CandidateStatus } from '../../../../src/candidates/domain/entities/Candidate';
 
 describe('Candidate Entity - Domain Tests', () => {
   describe('Factory Methods', () => {

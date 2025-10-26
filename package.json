@@ -1,0 +1,48 @@
+{
+  "name": "lti-ats",
+  "version": "1.0.0",
+  "description": "LTI ATS - Applicant Tracking System",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm install --workspace=backend && npm install --workspace=frontend",
+    "test": "npm run test:unit",
+    "test:unit": "npm run test:unit:backend && npm run test:unit:frontend",
+    "test:unit:backend": "npm run test:unit --workspace=backend",
+    "test:unit:frontend": "npm run test:unit --workspace=frontend",
+    "test:integration": "npm run test:integration:backend && npm run test:integration:frontend",
+    "test:integration:backend": "npm run test:integration --workspace=backend",
+    "test:integration:frontend": "npm run test:integration --workspace=frontend",
+    "test:e2e": "npm run test:e2e:run",
+    "test:e2e:run": "playwright test --config=tests/playwright.config.ts",
+    "test:e2e:ui": "playwright test --ui --config=tests/playwright.config.ts",
+    "test:e2e:headed": "playwright test --headed --config=tests/playwright.config.ts",
+    "test:e2e:report": "playwright show-report tests/playwright-report",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:all:full": "npm run services:up && npm run db:prepare && npm run test:all && npm run services:down",
+    "test:watch": "npm run test:unit:backend -- --watch",
+    "test:coverage": "npm run test:unit:backend -- --coverage && npm run test:unit:frontend -- --coverage",
+    "services:up": "docker-compose up -d",
+    "services:down": "docker-compose down",
+    "services:restart": "npm run services:down && npm run services:up",
+    "db:prepare": "npm run wait-for-db && npm run db:migrate && npm run db:seed",
+    "db:migrate": "cd backend && npx prisma migrate deploy",
+    "db:seed": "cd backend && npx ts-node create-system-user.ts",
+    "wait-for-db": "node scripts/wait-for-db.js",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run start --workspace=frontend",
+    "dev": "npm run services:up && npm run db:prepare && concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

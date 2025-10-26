@@ -11,7 +11,7 @@ process.env.DATABASE_URL =
 process.env.LOG_LEVEL = 'error'; // Solo errores en tests
 
 // Mock del logger para evitar output en tests
-jest.mock('../utils/logger', () => ({
+jest.mock('../src/utils/logger', () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn(),
