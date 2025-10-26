@@ -1,0 +1,172 @@
+/**
+ * AddCandidateForm styles
+ * Responsive, mobile-first design
+ */
+
+/* Form container */
+.add-candidate-form {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+  background-color: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Header */
+.form-header {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #DEE2E6;
+}
+
+.form-title {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 40px;
+  color: #212529;
+  margin: 0 0 8px 0;
+}
+
+.form-description {
+  font-size: 16px;
+  line-height: 24px;
+  color: #6C757D;
+  margin: 0;
+}
+
+/* Sections */
+.form-section {
+  margin-bottom: 32px;
+}
+
+.form-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  color: #212529;
+  margin: 0 0 16px 0;
+}
+
+.form-section-icon {
+  font-size: 24px;
+}
+
+/* Grid layouts */
+.form-grid {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.form-grid--2-cols {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .form-grid--2-cols {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Form actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #DEE2E6;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .add-candidate-form {
+    padding: 16px;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .form-header {
+    margin-bottom: 24px;
+  }
+
+  .form-title {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  .form-description {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .form-section {
+    margin-bottom: 24px;
+  }
+
+  .form-section-title {
+    font-size: 18px;
+    line-height: 24px;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+}
+
+/* Tablet */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .add-candidate-form {
+    padding: 20px;
+  }
+
+  .form-title {
+    font-size: 28px;
+    line-height: 36px;
+  }
+
+  .form-section-title {
+    font-size: 18px;
+    line-height: 26px;
+  }
+}
+
+/* Desktop large */
+@media (min-width: 1280px) {
+  .add-candidate-form {
+    max-width: 1000px;
+    padding: 32px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .add-candidate-form {
+    box-shadow: none;
+  }
+
+  .form-actions {
+    display: none;
+  }
+}
+
+/* Accessibility - High contrast */
+@media (prefers-contrast: high) {
+  .add-candidate-form {
+    border: 2px solid #212529;
+  }
+
+  .form-header,
+  .form-actions {
+    border-color: #212529;
+  }
+}

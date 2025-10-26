@@ -52,7 +52,7 @@ npm run build
 4. Inicia el servidor backend:
 ```
 cd backend
-npm run dev 
+npm run dev
 ```
 
 5. En una nueva ventana de terminal, construye el servidor frontend:

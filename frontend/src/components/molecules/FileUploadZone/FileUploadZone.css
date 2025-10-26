@@ -1,0 +1,276 @@
+/**
+ * FileUploadZone component styles
+ */
+
+/* Wrapper */
+.file-upload-zone-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+/* Label */
+.file-upload-zone-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  color: #212529;
+}
+
+.file-upload-zone-required {
+  color: #E63946;
+  margin-left: 4px;
+}
+
+/* Drop zone */
+.file-upload-zone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 32px;
+  border: 2px dashed #CED4DA;
+  border-radius: 12px;
+  background-color: #F8F9FA;
+  cursor: pointer;
+  transition: all 200ms ease-in-out;
+}
+
+.file-upload-zone:hover:not(.file-upload-zone--disabled) {
+  border-color: #0066CC;
+  background-color: #F0F7FF;
+}
+
+.file-upload-zone--active {
+  border-color: #0066CC;
+  background-color: #E1F0FF;
+  transform: scale(1.02);
+}
+
+.file-upload-zone--error {
+  border-color: #E63946;
+  background-color: #FFF5F5;
+}
+
+.file-upload-zone--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Content */
+.file-upload-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.file-upload-zone-icon {
+  color: #6C757D;
+}
+
+.file-upload-zone--active .file-upload-zone-icon {
+  color: #0066CC;
+  animation: file-upload-bounce 600ms ease-in-out;
+}
+
+.file-upload-zone-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-upload-zone-primary-text {
+  font-size: 16px;
+  line-height: 24px;
+  color: #212529;
+  margin: 0;
+}
+
+.file-upload-zone-secondary-text {
+  font-size: 14px;
+  line-height: 20px;
+  color: #6C757D;
+  margin: 0;
+}
+
+/* File preview */
+.file-upload-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background-color: #F8F9FA;
+  border: 1px solid #DEE2E6;
+  border-radius: 8px;
+}
+
+.file-upload-preview-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-upload-preview-icon {
+  flex-shrink: 0;
+  color: #0066CC;
+}
+
+.file-upload-preview-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-upload-preview-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  color: #212529;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-upload-preview-size {
+  font-size: 12px;
+  line-height: 16px;
+  color: #6C757D;
+  margin: 4px 0 0 0;
+}
+
+.file-upload-preview-remove {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: #6C757D;
+  background-color: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 200ms ease-in-out;
+}
+
+.file-upload-preview-remove:hover {
+  color: #E63946;
+  background-color: #FFF5F5;
+}
+
+.file-upload-preview-remove:focus-visible {
+  outline: 2px solid #0066CC;
+  outline-offset: 2px;
+}
+
+/* Progress bar */
+.file-upload-progress {
+  width: 100%;
+  height: 4px;
+  margin-top: 8px;
+  background-color: #DEE2E6;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.file-upload-progress-bar {
+  height: 100%;
+  background-color: #0066CC;
+  transition: width 200ms ease-out;
+}
+
+.file-upload-uploading-text {
+  font-size: 12px;
+  line-height: 16px;
+  color: #0066CC;
+  margin: 0;
+  animation: file-upload-pulse 1.5s ease-in-out infinite;
+}
+
+/* Error message */
+.file-upload-zone-error {
+  font-size: 14px;
+  line-height: 20px;
+  color: #E63946;
+  margin: 0;
+  animation: file-upload-fade-in 300ms ease-in-out;
+}
+
+/* Animations */
+@keyframes file-upload-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes file-upload-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes file-upload-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .file-upload-zone {
+    min-height: 160px;
+    padding: 24px 16px;
+  }
+
+  .file-upload-zone-icon svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .file-upload-zone-primary-text {
+    font-size: 14px;
+  }
+
+  .file-upload-zone-secondary-text {
+    font-size: 12px;
+  }
+}
+
+/* Tablet */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .file-upload-zone {
+    min-height: 180px;
+    padding: 28px 20px;
+  }
+}
+
+/* Accessibility - Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .file-upload-zone,
+  .file-upload-zone--active,
+  .file-upload-zone-icon,
+  .file-upload-progress-bar,
+  .file-upload-uploading-text,
+  .file-upload-zone-error,
+  .file-upload-preview-remove {
+    transition: none;
+    animation: none;
+  }
+}
