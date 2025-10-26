@@ -8,6 +8,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { candidateSchema, CandidateSchemaType } from '../../../schemas/candidateSchema';
 import { useFormValidation } from '../../../hooks/useFormValidation';
 import { useFileUpload } from '../../../hooks/useFileUpload';
+import { createCandidate } from '../../../services/candidateService';
 import { TextField } from '../../atoms/TextField';
 import { TextArea } from '../../atoms/TextArea';
 import { Button } from '../../atoms/Button';
@@ -57,11 +58,19 @@ export const AddCandidateForm: React.FC<AddCandidateFormProps> = ({
         schema: candidateSchema,
         onSubmit: async (data) => {
             try {
-                // Here would be the API call
-                // await candidateService.createCandidate(data);
+                // Call the real API
+                const candidateData = {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email,
+                    phone: formData.phone,
+                    address: formData.address,
+                    education: formData.education,
+                    workExperience: formData.experience,
+                    cv: fileUpload.file || undefined,
+                };
 
-                // Simulate network delay
-                await new Promise((resolve) => setTimeout(resolve, 1500));
+                await createCandidate(candidateData);
 
                 toast.success('¡Candidato añadido exitosamente! 🎉', {
                     duration: 4000,
@@ -74,7 +83,11 @@ export const AddCandidateForm: React.FC<AddCandidateFormProps> = ({
                 // Reset form
                 resetForm();
             } catch (error) {
-                toast.error('Error al guardar el candidato. Por favor, intenta de nuevo.', {
+                const errorMessage = error instanceof Error
+                    ? error.message
+                    : 'Error al guardar el candidato. Por favor, intenta de nuevo.';
+
+                toast.error(errorMessage, {
                     duration: 4000,
                     position: 'top-right',
                     icon: '❌',

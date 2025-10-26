@@ -19,10 +19,6 @@ export const generalRateLimiter = rateLimit({
   ),
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
-  // Personalizar el key generator para usar IP real detrás de proxy
-  keyGenerator: (req) => {
-    return req.ip || req.headers['x-forwarded-for']?.toString() || 'unknown';
-  },
 });
 
 /**
