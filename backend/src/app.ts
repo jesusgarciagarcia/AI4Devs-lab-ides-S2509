@@ -1,8 +1,3 @@
-/**
- * Express Application Setup
- * Configuración central de la aplicación Express
- */
-
 import express, { Express } from 'express';
 import cors from 'cors';
 import { config } from './config/environment';
@@ -16,9 +11,6 @@ import { initCandidatesModule } from './candidates';
 
 const app: Express = express();
 
-// ==================== MIDDLEWARES GLOBALES ====================
-
-// CORS - Configurar según necesidades
 app.use(
   cors({
     origin: config.CORS_ORIGIN,
@@ -26,14 +18,10 @@ app.use(
   }),
 );
 
-// Body Parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Rate Limiting
 app.use(generalRateLimiter);
 
-// Request Logger (solo en desarrollo)
 if (config.NODE_ENV === 'development') {
   app.use((req, res, next) => {
     logger.info(`${req.method} ${req.url}`, {
@@ -44,8 +32,6 @@ if (config.NODE_ENV === 'development') {
     next();
   });
 }
-
-// ==================== HEALTH CHECK ====================
 
 app.get('/health', (req, res) => {
   res.json({
@@ -68,24 +54,10 @@ app.get('/', (req, res) => {
   });
 });
 
-// ==================== API ROUTES ====================
-
-// Initialize modules
 const candidateRoutes = initCandidatesModule();
-
-// V1 Routes
 app.use('/api/v1/candidates', candidateRoutes);
 
-// Future routes can be added here
-// app.use('/api/v1/auth', authRoutes);
-// app.use('/api/v1/users', userRoutes);
-
-// ==================== ERROR HANDLERS ====================
-
-// 404 Handler
 app.use(notFoundHandler);
-
-// Global Error Handler (DEBE ser el último)
 app.use(errorHandler);
 
 export default app;

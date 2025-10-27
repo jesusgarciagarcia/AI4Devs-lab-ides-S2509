@@ -1,130 +1,135 @@
-/**
- * File Handler Utility
- * Maneja la subida, almacenamiento y eliminación de archivos
- */
-
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 import { logger } from './logger';
+import { InternalServerError } from './errors';
 
 const unlinkAsync = promisify(fs.unlink);
 const mkdirAsync = promisify(fs.mkdir);
+const statAsync = promisify(fs.stat);
+
+class FileOperationError extends InternalServerError {
+  constructor(operation: string, details?: any) {
+    super(`File operation failed: ${operation}`);
+    this.details = details;
+  }
+}
 
 export class FileHandler {
-  private uploadDir: string;
+  private readonly uploadDir: string;
+  private readonly maxRetries = 3;
 
   constructor(uploadDir: string = 'uploads') {
     this.uploadDir = uploadDir;
     this.ensureUploadDirectory();
   }
 
-  /**
-   * Asegura que el directorio de uploads existe
-   */
   private async ensureUploadDirectory(): Promise<void> {
     try {
       await mkdirAsync(this.uploadDir, { recursive: true });
       await mkdirAsync(path.join(this.uploadDir, 'cvs'), { recursive: true });
     } catch (error) {
-      logger.error('Error creating upload directories', { error });
+      logger.error('Failed to create upload directories', { error });
+      throw new FileOperationError('directory creation', { error });
     }
   }
 
-  /**
-   * Guarda un archivo en el sistema de archivos
-   * @param file - Archivo de Multer
-   * @param subfolder - Subcarpeta dentro de uploads (ej: 'cvs')
-   * @returns URL relativa del archivo guardado
-   */
   async saveFile(
     file: Express.Multer.File,
     subfolder: string = '',
   ): Promise<string> {
     try {
-      const folderPath = subfolder
-        ? path.join(this.uploadDir, subfolder)
-        : this.uploadDir;
+      const folderPath = this.buildFolderPath(subfolder);
+      await this.ensureDirectoryExists(folderPath);
 
-      // Asegurar que la subcarpeta existe
-      await mkdirAsync(folderPath, { recursive: true });
-
-      // Generar nombre único
-      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-      const extension = path.extname(file.originalname);
-      const filename = `${subfolder}-${uniqueSuffix}${extension}`;
-      const filePath = path.join(folderPath, filename);
-
-      // Si Multer ya guardó el archivo, no hacer nada más
-      // Si no, escribir el buffer
       if (file.path) {
-        // Archivo ya está guardado por Multer
-        return path
-          .join(subfolder, path.basename(file.path))
-          .replace(/\\/g, '/');
-      } else if (file.buffer) {
-        // Guardar desde buffer
-        await fs.promises.writeFile(filePath, file.buffer as any);
+        return this.normalizeFilePath(subfolder, path.basename(file.path));
       }
 
-      const relativePath = path.join(subfolder, filename).replace(/\\/g, '/');
+      if (file.buffer) {
+        const filename = this.generateUniqueFilename(
+          subfolder,
+          file.originalname,
+        );
+        const filePath = path.join(folderPath, filename);
+        await new Promise<void>((resolve, reject) => {
+          fs.writeFile(filePath, file.buffer as any, (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
 
-      logger.info('File saved successfully', {
-        filename,
-        size: file.size,
-        mimetype: file.mimetype,
+        logger.info('File saved successfully', {
+          filename,
+          size: file.size,
+          mimetype: file.mimetype,
+        });
+
+        return this.normalizeFilePath(subfolder, filename);
+      }
+
+      throw new FileOperationError('save', {
+        reason: 'No file path or buffer provided',
       });
-
-      return relativePath;
     } catch (error) {
       logger.error('Error saving file', { error, filename: file.originalname });
-      throw new Error('Error al guardar el archivo');
+      throw new FileOperationError('save', {
+        error,
+        filename: file.originalname,
+      });
     }
   }
 
-  /**
-   * Elimina un archivo del sistema
-   * @param fileUrl - URL relativa del archivo (ej: 'cvs/cv-123456.pdf')
-   */
+  private buildFolderPath(subfolder: string): string {
+    return subfolder ? path.join(this.uploadDir, subfolder) : this.uploadDir;
+  }
+
+  private async ensureDirectoryExists(dirPath: string): Promise<void> {
+    await mkdirAsync(dirPath, { recursive: true });
+  }
+
+  private generateUniqueFilename(
+    subfolder: string,
+    originalName: string,
+  ): string {
+    const timestamp = Date.now();
+    const randomSuffix = Math.round(Math.random() * 1e9);
+    const extension = path.extname(originalName);
+    return `${subfolder}-${timestamp}-${randomSuffix}${extension}`;
+  }
+
+  private normalizeFilePath(subfolder: string, filename: string): string {
+    return path.join(subfolder, filename).replace(/\\/g, '/');
+  }
+
   async deleteFile(fileUrl: string): Promise<void> {
     try {
-      const filePath = path.join(this.uploadDir, fileUrl);
+      const filePath = this.getFilePath(fileUrl);
 
-      // Verificar si el archivo existe
-      if (fs.existsSync(filePath)) {
-        await unlinkAsync(filePath);
-        logger.info('File deleted successfully', { fileUrl });
-      } else {
+      if (!this.fileExists(fileUrl)) {
         logger.warn('File not found for deletion', { fileUrl });
+        return;
       }
+
+      await unlinkAsync(filePath);
+      logger.info('File deleted successfully', { fileUrl });
     } catch (error) {
       logger.error('Error deleting file', { error, fileUrl });
-      // No lanzar error, solo loggear (archivo puede no existir)
     }
   }
 
-  /**
-   * Obtiene el path completo de un archivo
-   */
   getFilePath(fileUrl: string): string {
     return path.join(this.uploadDir, fileUrl);
   }
 
-  /**
-   * Verifica si un archivo existe
-   */
   fileExists(fileUrl: string): boolean {
-    const filePath = this.getFilePath(fileUrl);
-    return fs.existsSync(filePath);
+    return fs.existsSync(this.getFilePath(fileUrl));
   }
 
-  /**
-   * Obtiene información de un archivo
-   */
   async getFileInfo(fileUrl: string): Promise<fs.Stats | null> {
     try {
       const filePath = this.getFilePath(fileUrl);
-      return await fs.promises.stat(filePath);
+      return await statAsync(filePath);
     } catch (error) {
       logger.error('Error getting file info', { error, fileUrl });
       return null;
@@ -132,5 +137,4 @@ export class FileHandler {
   }
 }
 
-// Instancia singleton
 export const fileHandler = new FileHandler();

@@ -1,22 +1,11 @@
-/**
- * Custom hook for form validation using Zod schemas
- * Implements Single Responsibility Principle - only handles validation logic
- */
-
 import { useState, useCallback } from "react";
 import { z } from "zod";
 
-/**
- * Props for useFormValidation hook
- */
 interface UseFormValidationProps<T> {
   schema: z.ZodSchema<T>;
   onSubmit: (data: T) => Promise<void>;
 }
 
-/**
- * Return type for useFormValidation hook
- */
 interface UseFormValidationReturn {
   errors: Record<string, string>;
   isSubmitting: boolean;
@@ -27,21 +16,6 @@ interface UseFormValidationReturn {
   setFieldError: (fieldName: string, error: string) => void;
 }
 
-/**
- * Hook for form validation with Zod
- * Provides field-level and form-level validation
- *
- * @param schema - Zod validation schema
- * @param onSubmit - Callback function to execute on successful validation
- *
- * @example
- * const { errors, validateField, handleSubmit } = useFormValidation({
- *   schema: candidateSchema,
- *   onSubmit: async (data) => {
- *     await api.createCandidate(data);
- *   }
- * });
- */
 export function useFormValidation<T>({
   schema,
   onSubmit,
@@ -49,23 +23,15 @@ export function useFormValidation<T>({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  /**
-   * Validate a single field
-   * Called on blur or onChange for real-time validation
-   */
   const validateField = useCallback(
     async (fieldName: string, value: unknown): Promise<boolean> => {
       try {
-        // Validate against full schema with partial data
         await schema.parseAsync({ [fieldName]: value });
-
-        // Clear error for this field
         setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors[fieldName];
           return newErrors;
         });
-
         return true;
       } catch (error) {
         if (error instanceof z.ZodError) {
@@ -85,10 +51,6 @@ export function useFormValidation<T>({
     [schema]
   );
 
-  /**
-   * Validate entire form
-   * Called before submission
-   */
   const validateForm = useCallback(
     async (data: unknown): Promise<boolean> => {
       try {
@@ -112,10 +74,6 @@ export function useFormValidation<T>({
     [schema]
   );
 
-  /**
-   * Handle form submission with validation
-   * Prevents submission if validation fails
-   */
   const handleSubmit = useCallback(
     async (data: unknown) => {
       setIsSubmitting(true);
@@ -134,16 +92,10 @@ export function useFormValidation<T>({
     [validateForm, onSubmit]
   );
 
-  /**
-   * Clear all validation errors
-   */
   const clearErrors = useCallback(() => {
     setErrors({});
   }, []);
 
-  /**
-   * Set error for specific field (for server-side validation)
-   */
   const setFieldError = useCallback((fieldName: string, error: string) => {
     setErrors((prev) => ({
       ...prev,

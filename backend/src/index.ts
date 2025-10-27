@@ -1,37 +1,28 @@
-/**
- * Server Entry Point
- * Inicia el servidor Express y maneja el ciclo de vida
- */
-
 import app from './app';
 import { config } from './config/environment';
 import { logger } from './utils/logger';
 import { prisma } from './config/database';
 
-const PORT = config.PORT;
+const SHUTDOWN_TIMEOUT_MS = 10000;
 
-/**
- * Inicia el servidor
- */
-const server = app.listen(PORT, () => {
-  logger.info(`🚀 Backend Imparable! Servidor corriendo en puerto ${PORT}`, {
-    environment: config.NODE_ENV,
-    port: PORT,
-  });
-  logger.info(`📖 Health check: http://localhost:${PORT}/health`);
-  logger.info(`🔌 API Base: http://localhost:${PORT}/api/v1`);
+const server = app.listen(config.PORT, () => {
+  logger.info(
+    `🚀 Backend Imparable! Servidor corriendo en puerto ${config.PORT}`,
+    {
+      environment: config.NODE_ENV,
+      port: config.PORT,
+    },
+  );
+  logger.info(`📖 Health check: http://localhost:${config.PORT}/health`);
+  logger.info(`🔌 API Base: http://localhost:${config.PORT}/api/v1`);
 });
 
-/**
- * Manejo de errores no capturados
- */
-process.on('unhandledRejection', (reason: Error, promise: Promise<any>) => {
-  logger.error('Unhandled Rejection at:', {
-    promise,
+process.on('unhandledRejection', (reason: Error) => {
+  logger.error('Unhandled Rejection:', {
     reason: reason.message,
     stack: reason.stack,
   });
-  // En producción, considera cerrar el servidor gracefully
+
   if (config.NODE_ENV === 'production') {
     gracefulShutdown('Unhandled Rejection');
   }
@@ -42,14 +33,10 @@ process.on('uncaughtException', (error: Error) => {
     message: error.message,
     stack: error.stack,
   });
-  // Cerrar el servidor inmediatamente
   gracefulShutdown('Uncaught Exception');
 });
 
-/**
- * Cierre graceful del servidor
- */
-function gracefulShutdown(signal: string) {
+function gracefulShutdown(signal: string): void {
   logger.info(`${signal} received. Starting graceful shutdown...`);
 
   server.close(async () => {
@@ -65,14 +52,12 @@ function gracefulShutdown(signal: string) {
     }
   });
 
-  // Forzar cierre después de 10 segundos
   setTimeout(() => {
     logger.error('Forcing shutdown after timeout');
     process.exit(1);
-  }, 10000);
+  }, SHUTDOWN_TIMEOUT_MS);
 }
 
-// Manejar señales de terminación
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 

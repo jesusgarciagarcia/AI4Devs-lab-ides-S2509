@@ -1,11 +1,6 @@
-/**
- * CANDIDATE CONTROLLER - INFRASTRUCTURE LAYER
- *
- * Controlador HTTP que maneja las peticiones REST
- * Coordina con los casos de uso de la capa de aplicación
- */
-
 import { Request, Response, NextFunction } from 'express';
+import { BadRequestError } from '../../../utils/errors';
+import { logger } from '../../../utils/logger';
 import {
   CreateCandidateUseCase,
   GetCandidateUseCase,
@@ -15,6 +10,14 @@ import {
   UploadCVUseCase,
   DeleteCVUseCase,
 } from '../../application/use-cases';
+
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+  };
+}
 
 export class CandidateController {
   constructor(
@@ -27,140 +30,128 @@ export class CandidateController {
     private readonly deleteCVUseCase: DeleteCVUseCase,
   ) {}
 
-  /**
-   * POST /api/candidates
-   * Create a new candidate
-   */
-  async create(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      console.log('📝 Creating candidate with body:', req.body);
-      console.log('📎 File uploaded:', req.file);
-
-      const userId = (req as any).user?.id || 'system';
-      const cvFile = req.file; // Multer adds the file to req.file
-
-      // Validate required fields
-      const requiredFields = [
-        'firstName',
-        'lastName',
-        'email',
-        'phone',
-        'address',
-        'education',
-      ];
-      for (const field of requiredFields) {
-        if (!req.body[field]) {
-          console.error(`❌ Missing required field: ${field}`);
-          return next(new Error(`Missing required field: ${field}`));
-        }
-      }
-
-      // Map frontend field names to backend field names
-      const requestData = {
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
-        email: req.body.email,
-        phone: req.body.phone,
-        address: req.body.address,
-        education: req.body.education,
-        experience: req.body.workExperience || req.body.experience, // Accept both field names
-        createdBy: userId,
-        cvPath: cvFile?.path, // Add CV path if file was uploaded
-      };
-
-      // Ensure experience is not undefined
-      if (!requestData.experience) {
-        console.error('❌ Missing experience field');
-        return next(
-          new Error('Missing required field: workExperience or experience'),
-        );
-      }
-
-      console.log('✅ Request data:', requestData);
-
-      const response = await this.createCandidateUseCase.execute(requestData);
-
-      console.log('🎉 Candidate created successfully:', response);
-
-      res.status(201).json({
-        success: true,
-        data: response,
-      });
-    } catch (error) {
-      console.error('❌ Error creating candidate:', error);
-      next(error);
-    }
-  }
-
-  /**
-   * GET /api/candidates/:id
-   * Get candidate by ID
-   */
-  async getById(
-    req: Request,
+  async create(
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
     try {
-      const userId = (req as any).user?.id || 'system';
+      const userId = req.user?.id || 'system';
+      const uploadedFile = req.file;
 
-      const response = await this.getCandidateUseCase.execute({
+      const candidateData = this.buildCandidateRequest(
+        req.body,
+        userId,
+        uploadedFile,
+      );
+      const createdCandidate =
+        await this.createCandidateUseCase.execute(candidateData);
+
+      logger.info('Candidate created successfully', {
+        candidateId: createdCandidate.id,
+        email: createdCandidate.email,
+        userId,
+      });
+
+      res.status(201).json({
+        success: true,
+        data: createdCandidate,
+      });
+    } catch (error) {
+      logger.error('Error creating candidate', { error, userId: req.user?.id });
+      next(error);
+    }
+  }
+
+  private buildCandidateRequest(
+    body: any,
+    userId: string,
+    file?: Express.Multer.File,
+  ) {
+    const experience = body.workExperience || body.experience;
+
+    if (!experience) {
+      throw new BadRequestError(
+        'Missing required field: experience or workExperience',
+      );
+    }
+
+    return {
+      firstName: body.firstName,
+      lastName: body.lastName,
+      email: body.email,
+      phone: body.phone,
+      address: body.address,
+      education: body.education,
+      experience,
+      createdBy: userId,
+      cvPath: file?.path,
+    };
+  }
+
+  async getById(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const userId = req.user?.id || 'system';
+      const candidate = await this.getCandidateUseCase.execute({
         id: req.params.id,
         userId,
       });
 
       res.status(200).json({
         success: true,
-        data: response,
+        data: candidate,
       });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * GET /api/candidates
-   * List candidates with pagination and filters
-   */
-  async list(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async list(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
-      const userId = (req as any).user?.id || 'system';
+      const userId = req.user?.id || 'system';
+      const paginationParams = this.extractPaginationParams(req.query);
 
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const sortBy = req.query.sortBy as string;
-      const sortOrder = req.query.sortOrder as 'asc' | 'desc';
-      const search = req.query.search as string;
-      const status = req.query.status as string;
-
-      const response = await this.listCandidatesUseCase.execute({
-        page,
-        limit,
-        sortBy,
-        sortOrder,
-        search,
-        status,
+      const paginatedCandidates = await this.listCandidatesUseCase.execute({
+        ...paginationParams,
         userId,
       });
 
       res.status(200).json({
         success: true,
-        ...response,
+        ...paginatedCandidates,
       });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * PUT /api/candidates/:id
-   * Update candidate
-   */
-  async update(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const userId = (req as any).user?.id || 'system';
+  private extractPaginationParams(query: any) {
+    return {
+      page: parseInt(query.page as string) || 1,
+      limit: parseInt(query.limit as string) || 10,
+      sortBy: query.sortBy as string,
+      sortOrder: query.sortOrder as 'asc' | 'desc',
+      search: query.search as string,
+      status: query.status as string,
+    };
+  }
 
-      const response = await this.updateCandidateUseCase.execute({
+  async update(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const userId = req.user?.id || 'system';
+      const updatedCandidate = await this.updateCandidateUseCase.execute({
         candidateId: req.params.id,
         userId,
         ...req.body,
@@ -168,86 +159,79 @@ export class CandidateController {
 
       res.status(200).json({
         success: true,
-        data: response,
+        data: updatedCandidate,
       });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * DELETE /api/candidates/:id
-   * Delete candidate (soft delete)
-   */
-  async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const userId = (req as any).user?.id || 'system';
-
-      const response = await this.deleteCandidateUseCase.execute({
-        candidateId: req.params.id,
-        userId,
-      });
-
-      res.status(200).json(response);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * POST /api/candidates/:id/cv
-   * Upload CV for candidate
-   */
-  async uploadCV(
-    req: Request,
+  async delete(
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
     try {
-      const userId = (req as any).user?.id || 'system';
-      const file = (req as any).file;
+      const userId = req.user?.id || 'system';
+      const deletionResult = await this.deleteCandidateUseCase.execute({
+        candidateId: req.params.id,
+        userId,
+      });
 
-      if (!file) {
-        res.status(400).json({
-          success: false,
-          error: 'No file uploaded',
-        });
-        return;
+      res.status(200).json(deletionResult);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async uploadCV(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const userId = req.user?.id || 'system';
+      const uploadedFile = req.file;
+
+      if (!uploadedFile) {
+        throw new BadRequestError('No file uploaded');
       }
 
-      const response = await this.uploadCVUseCase.execute({
+      const cvData = this.extractFileData(uploadedFile);
+      const uploadResult = await this.uploadCVUseCase.execute({
         candidateId: req.params.id,
         userId,
-        cvUrl: file.path || file.location,
-        fileName: file.originalname,
-        mimeType: file.mimetype,
-        size: file.size,
+        ...cvData,
       });
 
-      res.status(200).json(response);
+      res.status(200).json(uploadResult);
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * DELETE /api/candidates/:id/cv
-   * Delete CV from candidate
-   */
+  private extractFileData(file: Express.Multer.File) {
+    return {
+      cvUrl: file.path || (file as any).location,
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+    };
+  }
+
   async deleteCV(
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
     try {
-      const userId = (req as any).user?.id || 'system';
-
-      const response = await this.deleteCVUseCase.execute({
+      const userId = req.user?.id || 'system';
+      const deletionResult = await this.deleteCVUseCase.execute({
         candidateId: req.params.id,
         userId,
       });
 
-      res.status(200).json(response);
+      res.status(200).json(deletionResult);
     } catch (error) {
       next(error);
     }

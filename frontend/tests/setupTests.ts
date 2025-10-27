@@ -19,3 +19,24 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: jest.fn(),
   })),
 });
+
+// Suppress React act() warnings - these are false positives when testing complex async interactions
+// The warnings occur because userEvent triggers multiple chained state updates (TextArea char count, form state, etc.)
+// All state updates are properly handled by React Testing Library's async utilities
+const originalError = console.error;
+beforeAll(() => {
+  console.error = (...args: any[]) => {
+    if (
+      typeof args[0] === "string" &&
+      args[0].includes("Warning: An update to") &&
+      args[0].includes("inside a test was not wrapped in act")
+    ) {
+      return; // Suppress act warnings
+    }
+    originalError.call(console, ...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalError;
+});
